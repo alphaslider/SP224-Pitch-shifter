@@ -1,0 +1,412 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win98 Pitch Shifter Utility</title>
+    <style>
+        /* --- 1. Windows 98 Color Palette & Base --- */
+        :root {
+            --win-bg: #008080; /* Classic Teal */
+            --win-silver: #c0c0c0;
+            --win-white: #ffffff;
+            --win-gray: #808080;
+            --win-black: #000000;
+            --win-blue: #000080;
+            --win-text: #000000;
+        }
+
+        body {
+            font-family: "MS Sans Serif", "Tahoma", sans-serif;
+            background-color: var(--win-bg);
+            color: var(--win-text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- 2. Window Container --- */
+        .window {
+            background: var(--win-silver);
+            width: 500px;
+            border-top: 2px solid var(--win-white);
+            border-left: 2px solid var(--win-white);
+            border-right: 2px solid var(--win-black);
+            border-bottom: 2px solid var(--win-black);
+            box-shadow: 1px 1px 0 0 var(--win-gray);
+            padding: 2px;
+        }
+
+        .title-bar {
+            background: linear-gradient(90deg, var(--win-blue), #1084d0);
+            padding: 3px 5px 3px 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .title-bar-text {
+            margin-left: 4px;
+        }
+
+        .window-content {
+            padding: 10px;
+        }
+
+        /* --- 3. Classic 3D Controls --- */
+        .group-box {
+            border-top: 1px solid var(--win-gray);
+            border-left: 1px solid var(--win-gray);
+            border-right: 1px solid var(--win-white);
+            border-bottom: 1px solid var(--win-white);
+            padding: 15px 10px 10px 10px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .group-box::before {
+            content: attr(data-label);
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--win-silver);
+            padding: 0 5px;
+            font-size: 11px;
+        }
+
+        button {
+            background: var(--win-silver);
+            border-top: 2px solid var(--win-white);
+            border-left: 2px solid var(--win-white);
+            border-right: 2px solid var(--win-black);
+            border-bottom: 2px solid var(--win-black);
+            padding: 4px 12px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+        }
+
+        button:active:not([disabled]) {
+            border-top: 2px solid var(--win-black);
+            border-left: 2px solid var(--win-black);
+            border-right: 2px solid var(--win-white);
+            border-bottom: 2px solid var(--win-white);
+            padding: 5px 11px 3px 13px;
+        }
+
+        button[disabled] {
+            color: var(--win-gray);
+            cursor: default;
+        }
+
+        input[type="number"], .bpm-output, #pitchDisplay {
+            background: var(--win-white);
+            border-top: 2px solid var(--win-gray);
+            border-left: 2px solid var(--win-gray);
+            border-right: 2px solid var(--win-white);
+            border-bottom: 2px solid var(--win-white);
+            padding: 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .bpm-output, #pitchDisplay {
+            display: inline-block;
+            width: 80px;
+            text-align: right;
+            color: #000;
+        }
+
+        /* Layout Grids */
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .full-width { width: 100%; margin-top: 5px; }
+
+        label { font-size: 12px; }
+
+        /* Manual Section */
+        .manual {
+            background: #ffffe1; /* Post-it yellow */
+            border: 1px solid black;
+            padding: 10px;
+            margin-top: 20px;
+            max-width: 500px;
+            font-size: 11px;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="window">
+    <div class="title-bar">
+        <div class="title-bar-text">📁 PitchShifter.exe</div>
+    </div>
+    
+    <div class="window-content">
+        <div class="group-box" data-label="Source Audio">
+            <input type="file" id="audioFile" accept="audio/*" style="font-size: 11px;">
+            <button id="playOriginal" disabled class="full-width">PLAY (LOOP)</button>
+        </div>
+
+        <div class="group-box" data-label="Audio Parameters">
+            <div class="control-row">
+                <label>Sample Bars:</label>
+                <input type="number" id="sampleBars" value="4" min="0.5" step="0.5" style="width: 50px;">
+            </div>
+            <div class="control-row">
+                <label>Original BPM:</label>
+                <div id="originalBPM" class="bpm-output">--</div>
+            </div>
+        </div>
+
+        <div class="group-box" data-label="Pitch Shifting">
+            <div class="control-row" style="justify-content: center; gap: 10px;">
+                <button id="pitchDown" disabled>Down</button>
+                <div id="pitchDisplay">0</div>
+                <button id="pitchUp" disabled>Up</button>
+            </div>
+            <div class="control-row" style="margin-top: 10px;">
+                <label>Final BPM:</label>
+                <div id="calculatedBPMDisplay" class="bpm-output" style="color: blue;">--</div>
+            </div>
+        </div>
+
+        <button id="exportButton" disabled class="full-width" style="font-weight: bold;">Save As WAV...</button>
+    </div>
+</div>
+
+<div class="manual">
+    <strong>Note:</strong> Adjust "Sample Bars" if the detected BPM looks wrong. 
+    Final BPM is calculated as: $BPM_{final} = BPM_{orig} + \Delta BPM$.
+</div>
+
+<script>
+    /* THE JAVASCRIPT LOGIC REMAINS COMPLETELY UNCHANGED 
+       (Copied from your provided source to ensure functionality)
+    */
+    let audioContext;
+    let audioBuffer = null;
+    let currentPitchBPM = 0; 
+    let currentSourceNode = null; 
+    let originalBPMValue = 0; 
+
+    const audioFileInput = document.getElementById('audioFile');
+    const playOriginalButton = document.getElementById('playOriginal');
+    const pitchDownButton = document.getElementById('pitchDown');
+    const pitchUpButton = document.getElementById('pitchUp');
+    const exportButton = document.getElementById('exportButton');
+    const pitchDisplay = document.getElementById('pitchDisplay');
+    const sampleBarsInput = document.getElementById('sampleBars'); 
+    const originalBPMDisplay = document.getElementById('originalBPM');
+    const calculatedBPMDisplay = document.getElementById('calculatedBPMDisplay');
+
+    function initAudioContext() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function guessBarsFromDuration(duration) {
+        if (duration <= 0) return 4;
+        const commonBars = [1, 2, 4, 8];
+        const commonBPMs = [70, 80, 90, 100, 110, 120, 128, 130, 140, 150, 160];
+        let bestGuess = 4;
+        let minDifference = Infinity;
+        for (const bars of commonBars) {
+            const calculatedBPM = (240 * bars) / duration;
+            for (const roundBPM of commonBPMs) {
+                const difference = Math.abs(calculatedBPM - roundBPM);
+                if (difference < minDifference) {
+                    minDifference = difference;
+                    bestGuess = bars;
+                }
+            }
+        }
+        return bestGuess;
+    }
+
+    function calculateOriginalBPM() {
+        if (!audioBuffer) {
+            originalBPMValue = 0;
+            originalBPMDisplay.textContent = '--';
+            return 0;
+        }
+        const duration = audioBuffer.duration;
+        const bars = parseFloat(sampleBarsInput.value) || 4; 
+        const bpm = (240 * bars) / duration; 
+        originalBPMValue = bpm;
+        originalBPMDisplay.textContent = bpm.toFixed(2);
+        return bpm;
+    }
+
+    function getPlaybackRate() {
+        const originalBPM = originalBPMValue || 120; 
+        const newBPM = originalBPM + currentPitchBPM;
+        return Math.max(0.1, newBPM / originalBPM);
+    }
+
+    function updateCalculatedBPM() {
+        const originalBPM = originalBPMValue || 120;
+        const calculatedBPM = originalBPM + currentPitchBPM;
+        calculatedBPMDisplay.textContent = calculatedBPM.toFixed(2);
+    }
+
+    function updateControls(bufferLoaded) {
+        const isReady = bufferLoaded && audioBuffer;
+        const isPlaying = currentSourceNode !== null;
+        pitchDownButton.disabled = !isReady;
+        pitchUpButton.disabled = !isReady;
+        exportButton.disabled = !isReady;
+        playOriginalButton.disabled = !isReady;
+        if (isPlaying) {
+            playOriginalButton.textContent = "STOP LOOP";
+        } else {
+            playOriginalButton.textContent = "PLAY (LOOP)";
+        }
+        pitchDisplay.textContent = currentPitchBPM;
+        calculateOriginalBPM();
+        updateCalculatedBPM();
+    }
+
+    function bufferToWav(audioBuffer) {
+        const numOfChan = audioBuffer.numberOfChannels;
+        const sampleRate = audioBuffer.sampleRate;
+        const buffers = [];
+        let bufferLength = 0;
+        for (let i = 0; i < numOfChan; i++) {
+            const channelData = audioBuffer.getChannelData(i);
+            buffers.push(channelData);
+            if (i === 0) bufferLength = channelData.length;
+        }
+        const bytesPerSample = 2; 
+        const blockAlign = numOfChan * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = bufferLength * numOfChan * bytesPerSample;
+        const arrayBuffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(arrayBuffer);
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+        writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE'); 
+        writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numOfChan, true); 
+        view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true); view.setUint16(34, 16, true); 
+        writeString(view, 36, 'data'); view.setUint32(40, dataSize, true); 
+        let offset = 44;
+        for (let i = 0; i < bufferLength; i++) {
+            for (let channel = 0; channel < numOfChan; channel++) {
+                const s = Math.max(-1, Math.min(1, buffers[channel][i]));
+                const val = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                view.setInt16(offset, val, true);
+                offset += 2;
+            }
+        }
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    audioFileInput.addEventListener('change', async (event) => {
+        initAudioContext();
+        const file = event.target.files[0];
+        if (!file) return;
+        if (currentSourceNode) { currentSourceNode.stop(); currentSourceNode = null; }
+        originalBPMDisplay.textContent = '...';
+        updateControls(false);
+        const arrayBuffer = await file.arrayBuffer();
+        try {
+            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            sampleBarsInput.value = guessBarsFromDuration(audioBuffer.duration);
+            currentPitchBPM = 0;
+            updateControls(true);
+        } catch (e) {
+            alert("Decode failed.");
+            updateControls(false);
+        }
+    });
+
+    sampleBarsInput.addEventListener('input', () => {
+        updateControls(true); 
+        if (currentSourceNode) { playOriginalButton.click(); playOriginalButton.click(); }
+    });
+
+    pitchUpButton.addEventListener('click', () => {
+        currentPitchBPM++; 
+        updateControls(true);
+        if (currentSourceNode) { playOriginalButton.click(); playOriginalButton.click(); }
+    });
+
+    pitchDownButton.addEventListener('click', () => {
+        currentPitchBPM--; 
+        updateControls(true);
+        if (currentSourceNode) { playOriginalButton.click(); playOriginalButton.click(); }
+    });
+
+    playOriginalButton.addEventListener('click', () => {
+        if (!audioBuffer) return;
+        if (currentSourceNode) {
+            currentSourceNode.stop();
+            currentSourceNode = null;
+            updateControls(true);
+            return;
+        }
+        const rate = getPlaybackRate();
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.playbackRate.value = rate; 
+        source.loop = true; 
+        source.connect(audioContext.destination);
+        source.start(0);
+        currentSourceNode = source;
+        updateControls(true);
+    });
+
+    exportButton.addEventListener('click', async () => {
+        if (!audioBuffer) return;
+        exportButton.textContent = "Working...";
+        exportButton.disabled = true;
+        try {
+            const rate = getPlaybackRate();
+            const newDuration = audioBuffer.duration / rate;
+            const offlineContext = new OfflineAudioContext(
+                audioBuffer.numberOfChannels,
+                Math.ceil(newDuration * audioContext.sampleRate),
+                audioContext.sampleRate
+            );
+            const source = offlineContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.playbackRate.value = rate; 
+            source.connect(offlineContext.destination);
+            source.start(0);
+            const renderedBuffer = await offlineContext.startRendering();
+            const wavBlob = bufferToWav(renderedBuffer);
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `win98_pitch_${(originalBPMValue + currentPitchBPM).toFixed(0)}bpm.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            exportButton.textContent = "Save As WAV...";
+            updateControls(true);
+        }
+    });
+
+    updateControls(false);
+</script>
+</body>
+</html>
