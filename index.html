@@ -1,204 +1,157 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Win98 Pitch Shifter Utility</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LAZER BLADE // PITCH_SHIFT</title>
     <style>
-        /* --- 1. Windows 98 Color Palette & Base --- */
-        :root {
-            --win-bg: #008080; /* Classic Teal */
-            --win-silver: #c0c0c0;
-            --win-white: #ffffff;
-            --win-gray: #808080;
-            --win-black: #000000;
-            --win-blue: #000080;
-            --win-text: #000000;
+        /* --- 1. FONTS & VARS --- */
+        @font-face { font-family: 'NIN'; src: url('nin.ttf') format('truetype'), local('Impact'), sans-serif; font-display: swap; }
+        @font-face { font-family: 'DATA'; src: url('data.ttf') format('truetype'), local('Courier New'), monospace; font-display: swap; }
+        
+        :root { 
+            --sz-dark: #050608; 
+            --sz-panel: #111215;
+            --sz-cyan: #00e5ff; 
+            --sz-magenta: #ff00ff;
+            --sz-text: #b0bec5;
+            --sz-dim: #445566;
         }
 
         body {
-            font-family: "MS Sans Serif", "Tahoma", sans-serif;
-            background-color: var(--win-bg);
-            color: var(--win-text);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'DATA', monospace; background-color: var(--sz-dark); color: var(--sz-text);
+            padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0;
+            text-shadow: 0 0 2px rgba(0, 229, 255, 0.3); user-select: none;
         }
 
-        /* --- 2. Window Container --- */
-        .window {
-            background: var(--win-silver);
-            width: 500px;
-            border-top: 2px solid var(--win-white);
-            border-left: 2px solid var(--win-white);
-            border-right: 2px solid var(--win-black);
-            border-bottom: 2px solid var(--win-black);
-            box-shadow: 1px 1px 0 0 var(--win-gray);
-            padding: 2px;
-        }
-
-        .title-bar {
-            background: linear-gradient(90deg, var(--win-blue), #1084d0);
-            padding: 3px 5px 3px 3px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            font-weight: bold;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .title-bar-text {
-            margin-left: 4px;
-        }
-
-        .window-content {
-            padding: 10px;
-        }
-
-        /* --- 3. Classic 3D Controls --- */
-        .group-box {
-            border-top: 1px solid var(--win-gray);
-            border-left: 1px solid var(--win-gray);
-            border-right: 1px solid var(--win-white);
-            border-bottom: 1px solid var(--win-white);
-            padding: 15px 10px 10px 10px;
-            margin-bottom: 15px;
+        /* --- 2. MAIN CONTAINER --- */
+        .container { 
+            width: 95vw; max-width: 600px; 
+            background-color: var(--sz-panel); 
+            border: 2px solid #333;
+            padding: 25px; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
             position: relative;
+            margin-bottom: 20px;
         }
-
-        .group-box::before {
-            content: attr(data-label);
-            position: absolute;
-            top: -10px;
-            left: 10px;
-            background: var(--win-silver);
-            padding: 0 5px;
-            font-size: 11px;
+        /* Corner Screws */
+        .container::before, .container::after {
+            content: ''; position: absolute; width: 8px; height: 8px; 
+            border-radius: 50%; background: #222; border: 2px solid #444;
+            box-shadow: inset 1px 1px 2px #000;
         }
+        .container::before { top: 8px; left: 8px; } 
+        .container::after { top: 8px; right: 8px; }
 
-        button {
-            background: var(--win-silver);
-            border-top: 2px solid var(--win-white);
-            border-left: 2px solid var(--win-white);
-            border-right: 2px solid var(--win-black);
-            border-bottom: 2px solid var(--win-black);
-            padding: 4px 12px;
-            font-size: 12px;
-            font-family: inherit;
-            cursor: pointer;
-            outline: none;
+        /* --- 3. HEADER --- */
+        #custom-header { 
+            font-family: 'NIN', sans-serif; text-align: left; margin-bottom: 25px; 
+            font-size: 2em; line-height: 1; letter-spacing: 2px; color: var(--sz-cyan);
+            border-bottom: 1px solid var(--sz-dim); padding-bottom: 10px;
         }
+        #blinking-cursor { animation: blink 1s step-end infinite; color: var(--sz-magenta); }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        button:active:not([disabled]) {
-            border-top: 2px solid var(--win-black);
-            border-left: 2px solid var(--win-black);
-            border-right: 2px solid var(--win-white);
-            border-bottom: 2px solid var(--win-white);
-            padding: 5px 11px 3px 13px;
-        }
-
-        button[disabled] {
-            color: var(--win-gray);
-            cursor: default;
-        }
-
-        input[type="number"], .bpm-output, #pitchDisplay {
-            background: var(--win-white);
-            border-top: 2px solid var(--win-gray);
-            border-left: 2px solid var(--win-gray);
-            border-right: 2px solid var(--win-white);
-            border-bottom: 2px solid var(--win-white);
-            padding: 4px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        }
-
-        .bpm-output, #pitchDisplay {
-            display: inline-block;
-            width: 80px;
-            text-align: right;
-            color: #000;
-        }
-
-        /* Layout Grids */
-        .control-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-
-        .full-width { width: 100%; margin-top: 5px; }
-
-        label { font-size: 12px; }
-
-        /* Manual Section */
-        .manual {
-            background: #ffffe1; /* Post-it yellow */
-            border: 1px solid black;
+        /* --- 4. CONTROLS --- */
+        .deck-section {
+            margin-bottom: 15px;
+            border: 1px solid #2a2b30;
+            background: rgba(0,0,0,0.3);
             padding: 10px;
-            margin-top: 20px;
-            max-width: 500px;
-            font-size: 11px;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+        }
+        .deck-label {
+            font-size: 10px; color: var(--sz-cyan); margin-bottom: 8px; 
+            text-transform: uppercase; letter-spacing: 1px; display: block;
+        }
+
+        .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+        .full { width: 100%; }
+
+        button, .file-btn {
+            font-family: 'DATA', monospace; background: #15161a; color: var(--sz-cyan);
+            border: 1px solid var(--sz-dim); padding: 10px; font-size: 14px; cursor: pointer;
+            text-transform: uppercase; text-align: center; transition: all 0.2s;
+            flex: 1;
+        }
+        button:hover:not(:disabled) { 
+            background: var(--sz-cyan); color: #000; 
+            box-shadow: 0 0 10px var(--sz-cyan); border-color: var(--sz-cyan);
+        }
+        button:disabled { opacity: 0.3; cursor: not-allowed; border-color: #333; color: #555; }
+        
+        /* Specialized Inputs */
+        input[type="number"] {
+            background: #000; border: 1px solid var(--sz-dim); 
+            color: var(--sz-cyan); font-family: 'DATA', monospace; 
+            padding: 5px; width: 60px; text-align: center; font-size: 14px;
+        }
+        input[type="file"] { display: none; } /* Hidden, triggered by label */
+
+        .data-display {
+            background: #000; color: var(--sz-magenta);
+            padding: 5px 10px; border: 1px solid #333;
+            min-width: 60px; text-align: right;
+        }
+
+        .pitch-readout {
+            font-size: 24px; color: #fff; font-weight: bold; width: 50px; text-align: center;
+        }
+
+        .status-bar {
+            font-size: 10px; color: #666; margin-top: 5px; border-top: 1px solid #222; padding-top: 5px;
         }
     </style>
 </head>
 <body>
 
-<div class="window">
-    <div class="title-bar">
-        <div class="title-bar-text">📁 PitchShifter.exe</div>
-    </div>
+<div class="container">
+    <div id="custom-header">PITCH_SHIFT_UTIL<span id="blinking-cursor">_</span></div>
     
-    <div class="window-content">
-        <div class="group-box" data-label="Source Audio">
-            <input type="file" id="audioFile" accept="audio/*" style="font-size: 11px;">
-            <button id="playOriginal" disabled class="full-width">PLAY (LOOP)</button>
+    <div class="deck-section">
+        <span class="deck-label">01 // SOURCE_INGEST</span>
+        <div class="row">
+            <label for="audioFile" class="file-btn" id="fileInputLabel">[ LOAD FILE ]</label>
+            <input type="file" id="audioFile" accept="audio/*">
+            <button id="playOriginal" disabled>[ PLAY LOOP ]</button>
         </div>
-
-        <div class="group-box" data-label="Audio Parameters">
-            <div class="control-row">
-                <label>Sample Bars:</label>
-                <input type="number" id="sampleBars" value="4" min="0.5" step="0.5" style="width: 50px;">
-            </div>
-            <div class="control-row">
-                <label>Original BPM:</label>
-                <div id="originalBPM" class="bpm-output">--</div>
-            </div>
-        </div>
-
-        <div class="group-box" data-label="Pitch Shifting">
-            <div class="control-row" style="justify-content: center; gap: 10px;">
-                <button id="pitchDown" disabled>Down</button>
-                <div id="pitchDisplay">0</div>
-                <button id="pitchUp" disabled>Up</button>
-            </div>
-            <div class="control-row" style="margin-top: 10px;">
-                <label>Final BPM:</label>
-                <div id="calculatedBPMDisplay" class="bpm-output" style="color: blue;">--</div>
-            </div>
-        </div>
-
-        <button id="exportButton" disabled class="full-width" style="font-weight: bold;">Save As WAV...</button>
     </div>
-</div>
 
-<div class="manual">
-    <strong>Note:</strong> Adjust "Sample Bars" if the detected BPM looks wrong. 
-    Final BPM is calculated as: $BPM_{final} = BPM_{orig} + \Delta BPM$.
+    <div class="deck-section">
+        <span class="deck-label">02 // ANALYSIS_PARAMS</span>
+        <div class="row">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <label>BARS:</label>
+                <input type="number" id="sampleBars" value="4" min="0.5" step="0.5">
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <label>DETECTED_BPM:</label>
+                <div id="originalBPM" class="data-display">--</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="deck-section">
+        <span class="deck-label">03 // PITCH_ENGINE</span>
+        <div class="row" style="justify-content: center; margin-bottom: 10px;">
+            <button id="pitchDown" disabled style="max-width: 60px;">&lt;</button>
+            <div id="pitchDisplay" class="pitch-readout">0</div>
+            <button id="pitchUp" disabled style="max-width: 60px;">&gt;</button>
+        </div>
+        <div class="row" style="justify-content: flex-end;">
+            <label style="color:var(--sz-text);">FINAL_BPM: </label>
+            <div id="calculatedBPMDisplay" class="data-display" style="color:var(--sz-cyan); margin-left:10px;">--</div>
+        </div>
+    </div>
+
+    <button id="exportButton" disabled class="full" style="border-color: var(--sz-magenta); color: var(--sz-magenta);">[ EXPORT WAV ]</button>
+    
+    <div class="status-bar">
+        SYSTEM: READY // FORMULA: BPM_FINAL = BPM_ORIG + DELTA
+    </div>
 </div>
 
 <script>
-    /* THE JAVASCRIPT LOGIC REMAINS COMPLETELY UNCHANGED 
-       (Copied from your provided source to ensure functionality)
-    */
+    // --- EXACT LOGIC PRESERVED FROM PREVIOUS VERSION ---
     let audioContext;
     let audioBuffer = null;
     let currentPitchBPM = 0; 
@@ -214,6 +167,7 @@
     const sampleBarsInput = document.getElementById('sampleBars'); 
     const originalBPMDisplay = document.getElementById('originalBPM');
     const calculatedBPMDisplay = document.getElementById('calculatedBPMDisplay');
+    const fileLabel = document.getElementById('fileInputLabel');
 
     function initAudioContext() {
         if (!audioContext) {
@@ -273,12 +227,16 @@
         pitchUpButton.disabled = !isReady;
         exportButton.disabled = !isReady;
         playOriginalButton.disabled = !isReady;
+        
         if (isPlaying) {
-            playOriginalButton.textContent = "STOP LOOP";
+            playOriginalButton.textContent = "[ STOP LOOP ]";
+            playOriginalButton.style.borderColor = "var(--sz-magenta)";
         } else {
-            playOriginalButton.textContent = "PLAY (LOOP)";
+            playOriginalButton.textContent = "[ PLAY LOOP ]";
+            playOriginalButton.style.borderColor = "";
         }
-        pitchDisplay.textContent = currentPitchBPM;
+        
+        pitchDisplay.textContent = (currentPitchBPM > 0 ? "+" : "") + currentPitchBPM;
         calculateOriginalBPM();
         updateCalculatedBPM();
     }
@@ -324,6 +282,8 @@
         initAudioContext();
         const file = event.target.files[0];
         if (!file) return;
+        fileLabel.textContent = `[ ${file.name.substring(0, 12)}... ]`;
+        
         if (currentSourceNode) { currentSourceNode.stop(); currentSourceNode = null; }
         originalBPMDisplay.textContent = '...';
         updateControls(false);
@@ -334,7 +294,7 @@
             currentPitchBPM = 0;
             updateControls(true);
         } catch (e) {
-            alert("Decode failed.");
+            alert("DECODE_FAIL");
             updateControls(false);
         }
     });
@@ -377,7 +337,7 @@
 
     exportButton.addEventListener('click', async () => {
         if (!audioBuffer) return;
-        exportButton.textContent = "Working...";
+        exportButton.textContent = "PROCESSING...";
         exportButton.disabled = true;
         try {
             const rate = getPlaybackRate();
@@ -397,11 +357,11 @@
             const url = URL.createObjectURL(wavBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `win98_pitch_${(originalBPMValue + currentPitchBPM).toFixed(0)}bpm.wav`;
+            a.download = `SZ_PITCH_${(originalBPMValue + currentPitchBPM).toFixed(0)}BPM.wav`;
             a.click();
             URL.revokeObjectURL(url);
         } finally {
-            exportButton.textContent = "Save As WAV...";
+            exportButton.textContent = "[ EXPORT WAV ]";
             updateControls(true);
         }
     });
